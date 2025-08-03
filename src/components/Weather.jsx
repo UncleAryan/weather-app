@@ -1,59 +1,76 @@
 import "./Weather.css"
 import search_icon from "../assets/search.png"
-import clear_icon from "../assets/clear.png"
-import cloud_icon from "../assets/cloud.png"
-import drizzle_icon from "../assets/drizzle.png"
 import humidity_icon from "../assets/humidity.png"
-import rain_icon from "../assets/rain.png"
-import snow_icon from "../assets/snow.png"
 import wind_icon from "../assets/wind.png"
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 
-const Weather = ()=> {
-    const search = async (city)=> {
+const Weather = () => {
+    const user_input = useRef();
+
+    const [weatherData, setWeatherData] = useState(false);
+
+    const search_city = async (city) => {
+        if(city === "") {
+            alert("City Name Not Entered");
+        }
+
         try {
-            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${import.meta.env.VITE_WEATHER_API_KEY}`;
-            
+            const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${import.meta.env.VITE_WEATHER_API_KEY}`;
             const fetch_response = await fetch(url);
-            const reponse_data = await fetch_response.json();
-            console.log(reponse_data);
-        } catch(error) {
+            const response_data = await fetch_response.json();
 
+            if(!fetch_response.ok) {
+                alert(response_data.message);
+                return;
+            }
+
+            const image_icon_url = `https://openweathermap.org/img/wn/${response_data.weather[0].icon}@2x.png`;
+            setWeatherData({
+                humidity: response_data.main.humidity,
+                wind_speed: response_data.wind.speed,
+                temperature: Math.floor(response_data.main.temp),
+                location_city: response_data.name,
+                weather_icon: image_icon_url
+            });
+            
+            
+        } catch(error) {
+            setWeatherData(false);
+            console.error("Couldn't fetch weather data");
         }
     }
-    useEffect(()=>{
-        search("London");
-    }, [])
 
     return(
         <div className="weather">
             <div className="search-bar">
-                <input type="text" placeholder="Search your city"/>
-                <img src={search_icon} alt="" />
+                <input ref={user_input} type="text" placeholder="Search your city"/>
+                <img src={search_icon} alt="" onClick={()=>search_city(user_input.current.value)}/>
             </div>
 
-            <img src={clear_icon} alt="" className="weather-icon"/>
+            {weatherData?<>
+                <img src={weatherData.weather_icon} alt="" className="weather-icon"/>
 
-            <p className="temperature">22° C</p>
+            <p className="temperature">{weatherData.temperature}° C</p>
 
-            <p className="location">New Jersey</p>
+            <p className="location">{weatherData.location_city}</p>
 
             <div className="weather-data">
                 <div className="data">
                     <img src={humidity_icon} alt="" />
                     <div>
-                        <p>91 %</p>
+                        <p>{weatherData.humidity} %</p>
                         <span>Humidity</span>
                     </div>
                 </div>
                 <div className="data">
                     <img src={wind_icon} alt="" />
                     <div>
-                        <p>2.2 Km/h</p>
+                        <p>{weatherData.wind_speed} Km/h</p>
                         <span>Wind Speed</span>
                     </div>
                 </div>
             </div>
+            </>:<></>}
         </div>
     );
 }
